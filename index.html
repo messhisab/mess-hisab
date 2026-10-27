@@ -1,0 +1,455 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>মেস হিসাব</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f6f4;color:#20352a;font-family:Arial,sans-serif}
+header{background:#176b45;color:white;padding:18px 15px}
+header h1{margin:0 0 5px;font-size:25px}
+main{max-width:850px;margin:auto;padding:12px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.card,.panel{background:white;border-radius:12px;padding:13px;margin-bottom:12px;box-shadow:0 2px 8px #00000008}
+.card small,.muted{color:#65756b}
+.card strong{display:block;font-size:20px;margin-top:8px;overflow-wrap:anywhere}
+h2{font-size:18px;margin:0 0 12px}
+input,select,button{font:inherit;width:100%;padding:11px;margin:5px 0;border-radius:8px}
+input,select{border:1px solid #d5dfd8;background:white}
+button{border:0;background:#176b45;color:white;font-weight:bold;cursor:pointer}
+.secondary{background:#e7f2eb;color:#176b45}
+.danger{background:#fff0ee;color:#a52c27}
+.edit{background:#eaf0ff;color:#254c9b}
+.smallbtn{width:auto;padding:7px 9px;font-size:12px;margin:3px}
+label{display:block;font-size:13px;margin-top:8px;color:#526258}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.item{padding:10px 0;border-bottom:1px solid #e8eee9}
+.muted{font-size:13px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 5px;border-bottom:1px solid #e8eee9;vertical-align:top}
+.green{color:#16814c}.red{color:#c43f39}.blue{color:#315eb5}
+.empty{text-align:center;color:#718078;padding:16px}
+.hidden{display:none!important}
+footer{text-align:center;color:#718078;font-size:12px;padding:18px}
+#status{padding:10px;border-radius:8px;background:#e7f2eb;margin:10px 0;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏠 মেস হিসাব</h1>
+  <div>সদস্য, জমা, বাজার খরচ ও মাসিক রিপোর্ট</div>
+</header>
+
+<main>
+  <section class="panel" id="authPanel">
+    <h2>🔐 আপনার অ্যাকাউন্ট</h2>
+    <p class="muted">একই ইমেইল দিয়ে অন্য ফোনে লগইন করলে আপনার অনলাইন হিসাব দেখা যাবে।</p>
+    <label>ইমেইল</label>
+    <input id="email" type="email" placeholder="আপনার ইমেইল" autocomplete="email">
+    <label>পাসওয়ার্ড (কমপক্ষে 6 অক্ষর)</label>
+    <input id="password" type="password" placeholder="পাসওয়ার্ড" autocomplete="current-password">
+    <button id="loginBtn">লগইন করুন</button>
+    <button id="registerBtn" class="secondary">নতুন অ্যাকাউন্ট তৈরি করুন</button>
+    <div id="authMessage" class="muted"></div>
+  </section>
+
+  <section id="appArea" class="hidden">
+    <section class="panel">
+      <div id="userInfo" class="muted"></div>
+      <button id="logoutBtn" class="secondary">লগআউট</button>
+      <div id="status" role="status">সংযোগ হচ্ছে...</div>
+    </section>
+
+    <div class="cards">
+      <div class="card"><small>মোট জমা</small><strong class="green" id="totalIn">৳ ০</strong></div>
+      <div class="card"><small>মোট খরচ</small><strong class="red" id="totalOut">৳ ০</strong></div>
+      <div class="card"><small>অবশিষ্ট</small><strong class="blue" id="balance">৳ ০</strong></div>
+      <div class="card"><small>সদস্য</small><strong id="memberCount">০ জন</strong></div>
+    </div>
+
+    <section class="panel">
+      <h2>📅 মাস নির্বাচন</h2>
+      <input type="month" id="month">
+      <p class="muted">নির্বাচিত মাসের হিসাব দেখাবে।</p>
+    </section>
+
+    <section class="panel">
+      <h2>👥 সদস্য যোগ / সংশোধন</h2>
+      <input id="memberName" placeholder="সদস্যের নাম">
+      <div class="row">
+        <button id="memberSaveBtn">সদস্য যোগ করুন</button>
+        <button id="memberCancelBtn" class="secondary hidden">বাতিল</button>
+      </div>
+      <div id="membersList"></div>
+    </section>
+
+    <section class="panel" id="entryPanel">
+      <h2 id="formTitle">💰 নতুন লেনদেন যোগ করুন</h2>
+      <label>লেনদেনের ধরন</label>
+      <select id="kind">
+        <option value="in">টাকা জমা</option>
+        <option value="out">খরচ</option>
+      </select>
+      <div id="memberField">
+        <label>কে টাকা জমা দিয়েছে?</label>
+        <select id="memberSelect"></select>
+      </div>
+      <label>টাকার পরিমাণ (৳)</label>
+      <input id="amount" type="number" min="0.01" step="0.01" placeholder="যেমন: ২০০০">
+      <label>বিভাগ</label>
+      <select id="category">
+        <option value="মাসিক জমা">মাসিক জমা</option>
+        <option value="চাল">চাল</option>
+        <option value="ডাল">ডাল</option>
+        <option value="মাছ">মাছ</option>
+        <option value="মাংস">মাংস</option>
+        <option value="সবজি">সবজি</option>
+        <option value="তেল">তেল</option>
+        <option value="মসলা">মসলা</option>
+        <option value="ডিম">ডিম</option>
+        <option value="গ্যাস">গ্যাস</option>
+        <option value="বিদ্যুৎ">বিদ্যুৎ</option>
+        <option value="অন্যান্য">অন্যান্য</option>
+      </select>
+      <label>তারিখ</label>
+      <input id="date" type="date">
+      <label>বিবরণ (ঐচ্ছিক)</label>
+      <input id="note" placeholder="যেমন: সকালের বাজার">
+      <button id="txSaveBtn">লেনদেন সংরক্ষণ করুন</button>
+      <button id="txCancelBtn" class="secondary hidden">সংশোধন বাতিল করুন</button>
+    </section>
+
+    <section class="panel">
+      <h2>📊 সদস্যভিত্তিক জমা</h2>
+      <div id="memberSummary"></div>
+    </section>
+
+    <section class="panel">
+      <h2>🧾 লেনদেনের তালিকা</h2>
+      <button id="exportBtn" class="secondary">CSV রিপোর্ট ডাউনলোড</button>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>তারিখ</th><th>বিবরণ</th><th>ধরন</th><th>টাকা</th><th>কাজ</th></tr></thead>
+          <tbody id="transactions"></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+</main>
+<footer>মেস হিসাব · Firebase সংস্করণ</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDocs, setDoc,
+  deleteDoc, onSnapshot
+} from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAjSML3IvKa99f4hkJTCjGFrtbHR2jg_Oo",
+  authDomain: "mess-hisab-77257.firebaseapp.com",
+  projectId: "mess-hisab-77257",
+  storageBucket: "mess-hisab-77257.firebasestorage.app",
+  messagingSenderId: "1054681286120",
+  appId: "1:1054681286120:web:8a2f72d1f1cab9ba82105d",
+  measurementId: "G-SDHM15H3FM"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = id => document.getElementById(id);
+
+const now = new Date();
+const fmtDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+$("date").value = fmtDate(now);
+$("month").value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+
+let user = null, members = [], tx = [];
+let editingTxId = null, editingMemberId = null;
+let unsubMembers = null, unsubTx = null, busy = false;
+
+function money(n) {
+  return "৳ " + Number(n || 0).toLocaleString("en-IN",{maximumFractionDigits:2});
+}
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
+function setStatus(msg) { $("status").textContent = msg; }
+function showError(e) {
+  console.error(e);
+  const messages = {
+    "auth/email-already-in-use":"এই ইমেইলে অ্যাকাউন্ট আগে থেকেই আছে। লগইন করুন।",
+    "auth/invalid-email":"ইমেইল ঠিকভাবে লিখুন।",
+    "auth/weak-password":"আরও শক্তিশালী পাসওয়ার্ড দিন।",
+    "auth/invalid-credential":"ইমেইল বা পাসওয়ার্ড সঠিক নয়।",
+    "auth/network-request-failed":"ইন্টারনেট সংযোগ পরীক্ষা করুন।",
+    "permission-denied":"ডেটাবেসের নিরাপত্তা নিয়ম পরীক্ষা করতে হবে।"
+  };
+  alert(messages[e.code] || ("সমস্যা হয়েছে: " + (e.message || e.code || "আবার চেষ্টা করুন")));
+}
+function col(name) {
+  if (!user) throw new Error("আগে লগইন করুন");
+  return collection(db,"users",user.uid,name);
+}
+function stopListeners() {
+  if(unsubMembers) unsubMembers();
+  if(unsubTx) unsubTx();
+  unsubMembers = unsubTx = null;
+}
+function resetAppData() { members=[]; tx=[]; render(); }
+
+$("registerBtn").onclick = async () => {
+  const email=$("email").value.trim(), password=$("password").value;
+  if(!email || password.length<6) return alert("ইমেইল লিখুন এবং কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড দিন।");
+  try {
+    $("authMessage").textContent="অ্যাকাউন্ট তৈরি হচ্ছে...";
+    await createUserWithEmailAndPassword(auth,email,password);
+  } catch(e) { showError(e); }
+};
+$("loginBtn").onclick = async () => {
+  const email=$("email").value.trim(), password=$("password").value;
+  if(!email || !password) return alert("ইমেইল ও পাসওয়ার্ড লিখুন।");
+  try {
+    $("authMessage").textContent="লগইন হচ্ছে...";
+    await signInWithEmailAndPassword(auth,email,password);
+  } catch(e) { showError(e); }
+};
+$("logoutBtn").onclick = () => signOut(auth).catch(showError);
+
+onAuthStateChanged(auth, async currentUser => {
+  stopListeners();
+  user=currentUser;
+  editingTxId=editingMemberId=null;
+  if(!user) {
+    $("authPanel").classList.remove("hidden");
+    $("appArea").classList.add("hidden");
+    $("authMessage").textContent="";
+    resetAppData();
+    return;
+  }
+
+  $("authPanel").classList.add("hidden");
+  $("appArea").classList.remove("hidden");
+  $("userInfo").textContent="লগইন: "+user.email;
+  setStatus("অনলাইন হিসাব লোড হচ্ছে...");
+
+  try {
+    await migrateLocalDataIfNeeded();
+    unsubMembers=onSnapshot(col("members"), snap=>{
+      members=snap.docs.map(d=>({id:d.id,...d.data()}));
+      render();
+    }, showError);
+    unsubTx=onSnapshot(col("transactions"), snap=>{
+      tx=snap.docs.map(d=>({id:d.id,...d.data()}));
+      render();
+      setStatus("অনলাইন ডেটাবেসের সঙ্গে সংযুক্ত।");
+    }, showError);
+  } catch(e) {
+    showError(e);
+    setStatus("ডেটাবেস সংযোগ হয়নি। নিরাপত্তা নিয়ম পরীক্ষা করুন।");
+  }
+});
+
+// পুরোনো ব্রাউজারের তথ্য কেবল তখনই স্থানান্তর হবে,
+// যখন এই অ্যাকাউন্টের ক্লাউডে কোনো রেকর্ড নেই।
+async function migrateLocalDataIfNeeded() {
+  const marker="mess_hisab_migrated_"+user.uid;
+  if(localStorage.getItem(marker)==="yes") return;
+
+  const [cloudM,cloudT]=await Promise.all([
+    getDocs(col("members")), getDocs(col("transactions"))
+  ]);
+  if(!cloudM.empty || !cloudT.empty) {
+    localStorage.setItem(marker,"yes");
+    return;
+  }
+
+  const oldM=JSON.parse(localStorage.getItem("mess_members")||"[]");
+  const oldT=JSON.parse(localStorage.getItem("mess_transactions")||"[]");
+  if(!oldM.length && !oldT.length) {
+    localStorage.setItem(marker,"yes");
+    return;
+  }
+
+  if(!confirm("এই ব্রাউজারে "+oldM.length+" জন সদস্য ও "+oldT.length+
+    "টি লেনদেন পাওয়া গেছে। এগুলো এই অ্যাকাউন্টে অনলাইনে কপি করবেন?")) return;
+
+  for(const m of oldM) {
+    if(m?.id) await setDoc(doc(col("members"),String(m.id)),{name:String(m.name||"")});
+  }
+  for(const t of oldT) {
+    if(t?.id) {
+      const {id,...data}=t;
+      await setDoc(doc(col("transactions"),String(id)),data);
+    }
+  }
+  localStorage.setItem(marker,"yes");
+  alert("পুরোনো তথ্য অনলাইনে কপি করা হয়েছে। CSV ব্যাকআপও রেখে দিন।");
+}
+
+$("memberSaveBtn").onclick = async () => {
+  if(busy) return;
+  const name=$("memberName").value.trim();
+  if(!name) return alert("সদস্যের নাম লিখুন।");
+  busy=true;
+  try {
+    if(editingMemberId) {
+      await setDoc(doc(col("members"),editingMemberId),{name});
+      cancelMemberEdit();
+    } else {
+      await setDoc(doc(col("members"),crypto.randomUUID()),{name});
+      $("memberName").value="";
+    }
+  } catch(e) { showError(e); }
+  finally { busy=false; }
+};
+function editMember(id) {
+  const m=members.find(x=>x.id===id); if(!m)return;
+  editingMemberId=id; $("memberName").value=m.name;
+  $("memberSaveBtn").textContent="নাম সংশোধন করুন";
+  $("memberCancelBtn").classList.remove("hidden");
+  $("memberName").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function cancelMemberEdit() {
+  editingMemberId=null; $("memberName").value="";
+  $("memberSaveBtn").textContent="সদস্য যোগ করুন";
+  $("memberCancelBtn").classList.add("hidden");
+}
+$("memberCancelBtn").onclick=cancelMemberEdit;
+
+function toggleMember() {
+  $("memberField").style.display=$("kind").value==="in"?"block":"none";
+  if($("kind").value==="in") $("category").value="মাসিক জমা";
+}
+$("kind").onchange=toggleMember;
+
+$("txSaveBtn").onclick=async () => {
+  if(busy)return;
+  const amount=Number($("amount").value), date=$("date").value;
+  const kind=$("kind").value, memberId=$("memberSelect").value;
+  if(!date)return alert("তারিখ নির্বাচন করুন।");
+  if(!Number.isFinite(amount)||amount<=0)return alert("সঠিক টাকার পরিমাণ লিখুন।");
+  if(kind==="in"&&!members.some(m=>m.id===memberId))return alert("আগে একজন সদস্য যোগ করুন।");
+
+  const data={
+    kind,amount,date,memberId:kind==="in"?memberId:"",
+    category:$("category").value,note:$("note").value.trim()
+  };
+  busy=true;
+  try {
+    const id=editingTxId||crypto.randomUUID();
+    await setDoc(doc(col("transactions"),id),data);
+    cancelEdit();
+    setStatus("লেনদেন অনলাইনে সংরক্ষিত হয়েছে।");
+  } catch(e) { showError(e); }
+  finally { busy=false; }
+};
+function editTransaction(id) {
+  const t=tx.find(x=>x.id===id); if(!t)return;
+  editingTxId=id;
+  $("kind").value=t.kind; toggleMember();
+  $("memberSelect").value=t.memberId||"";
+  $("amount").value=t.amount;
+  $("category").value=t.category||"অন্যান্য";
+  $("date").value=t.date; $("note").value=t.note||"";
+  $("formTitle").textContent="✏️ লেনদেন সংশোধন করুন";
+  $("txSaveBtn").textContent="পরিবর্তন সংরক্ষণ করুন";
+  $("txCancelBtn").classList.remove("hidden");
+  $("entryPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function cancelEdit() {
+  editingTxId=null; $("kind").value="in"; $("amount").value="";
+  $("category").value="মাসিক জমা"; $("date").value=fmtDate(new Date());
+  $("note").value=""; $("formTitle").textContent="💰 নতুন লেনদেন যোগ করুন";
+  $("txSaveBtn").textContent="লেনদেন সংরক্ষণ করুন";
+  $("txCancelBtn").classList.add("hidden"); toggleMember();
+}
+$("txCancelBtn").onclick=cancelEdit;
+
+async function deleteTransaction(id) {
+  if(!confirm("এই লেনদেনটি মুছে ফেলবেন?"))return;
+  try {
+    await deleteDoc(doc(col("transactions"),id));
+    if(editingTxId===id)cancelEdit();
+  } catch(e) { showError(e); }
+}
+
+function render() {
+  const month=$("month").value;
+  const list=tx.filter(t=>!month||String(t.date||"").startsWith(month));
+  const income=list.filter(t=>t.kind==="in").reduce((s,t)=>s+Number(t.amount||0),0);
+  const expense=list.filter(t=>t.kind==="out").reduce((s,t)=>s+Number(t.amount||0),0);
+  $("totalIn").textContent=money(income);
+  $("totalOut").textContent=money(expense);
+  $("balance").textContent=money(income-expense);
+  $("memberCount").textContent=members.length+" জন";
+
+  $("memberSelect").innerHTML=members.map(m=>
+    `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join("");
+
+  $("membersList").innerHTML=members.length?members.map(m=>
+    `<div class="item">${esc(m.name)}
+      <button class="smallbtn edit" data-edit-member="${esc(m.id)}">✏️ নাম সংশোধন</button>
+    </div>`).join(""):'<div class="empty">এখনো সদস্য যোগ করা হয়নি।</div>';
+
+  $("memberSummary").innerHTML=members.length?members.map(m=>{
+    const sum=list.filter(t=>t.kind==="in"&&t.memberId===m.id)
+      .reduce((s,t)=>s+Number(t.amount||0),0);
+    return `<div class="item">${esc(m.name)}
+      <strong class="green" style="float:right">${money(sum)}</strong></div>`;
+  }).join(""):'<div class="empty">সদস্য যোগ করুন।</div>';
+
+  $("transactions").innerHTML=list.length?[...list]
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(t=>{
+      const m=members.find(x=>x.id===t.memberId);
+      const title=t.kind==="in"?(m?m.name:"সদস্য"):(t.category||"খরচ");
+      return `<tr>
+        <td>${esc(t.date)}</td>
+        <td>${esc(title)}${t.note?" · "+esc(t.note):""}</td>
+        <td class="${t.kind==="in"?"green":"red"}">${t.kind==="in"?"জমা":"খরচ"}</td>
+        <td>${money(t.amount)}</td>
+        <td>
+          <button class="smallbtn edit" data-edit-tx="${esc(t.id)}">✏️ সংশোধন</button>
+          <button class="smallbtn danger" data-delete-tx="${esc(t.id)}">🗑️ মুছুন</button>
+        </td>
+      </tr>`;
+    }).join(""):'<tr><td colspan="5" class="empty">এই মাসে কোনো লেনদেন নেই।</td></tr>';
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  if(b.dataset.editMember)editMember(b.dataset.editMember);
+  if(b.dataset.editTx)editTransaction(b.dataset.editTx);
+  if(b.dataset.deleteTx)deleteTransaction(b.dataset.deleteTx);
+});
+$("month").onchange=render;
+
+$("exportBtn").onclick=()=>{
+  const month=$("month").value;
+  const list=tx.filter(t=>!month||String(t.date||"").startsWith(month));
+  const rows=[["তারিখ","ধরন","সদস্য","বিভাগ","টাকা","বিবরণ"]];
+  list.forEach(t=>{
+    const m=members.find(x=>x.id===t.memberId);
+    rows.push([t.date,t.kind==="in"?"জমা":"খরচ",m?m.name:"",t.category,t.amount,t.note||""]);
+  });
+  const csv="\uFEFF"+rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+  const a=document.createElement("a");a.href=url;
+  a.download="mess-hisab-"+(month||"all")+".csv";
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+
+toggleMember();
+</script>
+</body>
+  </html>
